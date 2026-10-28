@@ -211,7 +211,8 @@ static void menu_input_workspace(void) {
     if (p & BTN_A) {
         if (pal_sel < PALETTE_COUNT) {
             BlockDef d = g_palette[pal_sel]; s16 a1 = d.arg_min ? d.arg_min : 1;
-            if (d.opcode == OP_GOTO) a1 = 120; if (d.opcode == OP_POINT) a1 = 90;
+            if (d.opcode == OP_GOTO) a1 = 120;
+            if (d.opcode == OP_POINT) a1 = 90;
             script_add(d.opcode, a1, d.opcode == OP_GOTO ? 80 : 0);
         }
     }

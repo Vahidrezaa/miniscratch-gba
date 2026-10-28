@@ -110,9 +110,9 @@ static void draw_toolbar(void) {
     for (int i = 0; i < 6; i++) {
         int x = 4 + i*38;
         gfx_fill_rect(x, TOOLBAR_Y + 18, 36, 12, i == cur_tool ? 1 : 3);
-        font_draw(x + 2, TOOLBAR_Y + 20, tool_names[i], i == cur_tool ? 2 : 1);
+        font_draw_text(x + 2, TOOLBAR_Y + 20, tool_names[i], i == cur_tool ? 2 : 1);
     }
-    font_draw(4, 2, "PAINT  A=OK B=BACK START=SAVE", 1);
+    font_draw_text(4, 2, "PAINT  A=OK B=BACK START=SAVE", 1);
 }
 
 int paint_loop(void) {
