@@ -1,7 +1,7 @@
 #include "input.h"
 
 static u16 prev = 0, now = 0, edge = 0;
-static u16 rep_mask = 0, rep_cnt = 0;
+static u16 rep_mask = 0;
 
 void input_update(void) {
     prev = now;

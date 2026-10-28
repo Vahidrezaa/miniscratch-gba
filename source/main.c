@@ -19,8 +19,9 @@ int main(void) {
         menu_input();
         if (g_screen == SCR_RUN) menu_draw_run();
         else menu_draw();
-        
-        oam_update(obj_buffer); // کپی کردن اطلاعات OBJ ها به سخت‌افزار
+
+        // Copy the OBJ buffer to hardware OAM
+        oam_copy(oam_mem, obj_buffer, 128);
         gfx_flip();
     }
 }
