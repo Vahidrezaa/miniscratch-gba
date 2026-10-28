@@ -10,7 +10,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build with make
-        run: make
+        run: |
+          export DEVKITPRO=/opt/devkitpro
+          export DEVKITARM=/opt/devkitpro/devkitARM
+          make
 
       - name: Upload GBA ROM
         uses: actions/upload-artifact@v4

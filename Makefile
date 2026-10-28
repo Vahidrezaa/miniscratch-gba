@@ -5,17 +5,15 @@ INCLUDES := source
 LIBPATHS :=
 LIBS     := -ltonc
 
-# تعریف صریح کامپایلر و ابزارهای مخصوص GBA
-CC       := arm-none-eabi-gcc
-OBJCOPY  := arm-none-eabi-objcopy
+# Explicitly define the toolchain path using the DEVKITARM variable
+CC       := $(DEVKITARM)/bin/arm-none-eabi-gcc
+OBJCOPY  := $(DEVKITARM)/bin/arm-none-eabi-objcopy
 
 ARCH     := -mthumb-interwork -mthumb
 CFLAGS   := $(ARCH) -I$(INCLUDES) -Wall -O2 -std=gnu99
 LDFLAGS  := $(ARCH) -specs=gba.specs
 
-# پیدا کردن خودکار همه فایل‌های C در پوشه source
 CFILES   := $(wildcard $(SOURCES)/*.c)
-# تبدیل نام فایل‌های C به فایل‌های آبجکت (.o) در پوشه build
 OFILES   := $(patsubst $(SOURCES)/%.c, $(BUILD)/%.o, $(CFILES))
 
 .PHONY: all clean
