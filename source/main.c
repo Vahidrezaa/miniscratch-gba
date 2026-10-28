@@ -1,7 +1,5 @@
 #include "nano_ui.h"
 #include "block_engine.h"
-#include "vm.h"
-#include "script.h"
 
 // Layout Constants
 #define LEFT_TABS_W 12
