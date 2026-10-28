@@ -226,6 +226,10 @@ class GBAConverter:
         elif self.compress == 'rle':
             data_tiles = self._compress_rle(data_tiles)
             data_map = self._compress_rle(data_map)
+        while len(data_tiles) % 4 != 0:
+            data_tiles += b'\x00'
+        while len(data_map) % 2 != 0:
+            data_map += b'\x00'
 
         if self.format == 'bin':
             with open(f"{self.output_name}_tiles.bin", 'wb') as f: f.write(data_tiles)
