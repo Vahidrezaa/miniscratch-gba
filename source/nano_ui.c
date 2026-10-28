@@ -26,7 +26,7 @@
 #define NUI_CHARBLOCK_BYTES   0x4000u
 #define NUI_SCREENBLOCK_BYTES 0x0800u
 #define NUI_SCREENBLOCK_ENTRIES 1024
-#define NUI_TILE_BYTES        32u
+#define NUI_TILE_BYTES        64u
 #define NUI_OAM_ENTRY_WORDS   2         /* 8 bytes per OAM entry */
 #define NUI_PAL_BANK_ENTRIES  256
 #define NUI_DISPCNT_RUN       (DCNT_MODE0 | DCNT_BG0 | DCNT_OBJ | DCNT_OBJ_1D)
