@@ -1,236 +1,135 @@
-/*
- * main.c - MiniScratch for GBA (Powered by NanoUI)
- */
 #include "nano_ui.h"
+#include "block_engine.h"
+#include "vm.h"
+#include "script.h"
 
-/* ---- layout constants (no magic numbers) -------------------------------- */
-#define TITLE_SCALE        2
-#define TITLE_Y            8
-#define TITLE_RULE_Y       27
-#define TITLE_RULE_H       2
-#define TITLE_RULE_W       160
-#define SUBTITLE_Y         33
-#define HINT_Y             148
+// Layout Constants
+#define LEFT_TABS_W 12
+#define LEFT_PALETTE_W 58
+#define SANDBOX_X 70
+#define SANDBOX_W 100
+#define RIGHT_X 170
+#define RIGHT_W 70
+#define STAGE_SIZE 64
 
-#define MENU_PANEL_W       140
-#define MENU_PANEL_H       110
-#define MENU_PANEL_Y       40
-#define MENU_BTN_W         116
-#define MENU_BTN_GAP       6
-#define MENU_BTN_COUNT     4
-
-#define WS_MARGIN          4
-#define WS_PANEL_H         152
-#define WS_LEFT_W          64
-#define WS_CENTER_W        80
-#define WS_RIGHT_W         84
-#define WS_CENTER_X        (WS_MARGIN + WS_LEFT_W + 2)
-#define WS_RIGHT_X         (WS_CENTER_X + WS_CENTER_W + 2)
-
-#define CENTER_X(w)        ((UI_SCREEN_W - (w)) / 2)
-
-/* ---- scenes ------------------------------------------------------------- */
 extern const UiScene scene_menu;
 extern const UiScene scene_workspace;
 extern const UiScene scene_about;
 
-/* ======================================================================== */
-/* Shared                                                                   */
-/* ======================================================================== */
-static void on_back(UiWidget *self, void *user)
-{
+static void on_back(UiWidget *self, void *user) {
     (void)self; (void)user;
     ui_scene_switch(&scene_menu);
 }
 
-static void draw_hint_centered(const char *text)
-{
-    ui_draw_text(CENTER_X(ui_text_width(text, 1)), HINT_Y, text, UI_COL_TEXT_DIM);
-}
+// --- MAIN MENU ---
+static void on_start(UiWidget *self, void *user) { (void)self; (void)user; ui_scene_switch(&scene_workspace); }
+static void on_about(UiWidget *self, void *user) { (void)self; (void)user; ui_scene_switch(&scene_about); }
 
-/* ======================================================================== */
-/* Main menu                                                                */
-/* ======================================================================== */
-static void on_start(UiWidget *self, void *user)
-{
-    (void)self; (void)user;
-    ui_scene_switch(&scene_workspace);
-}
-
-static void on_about(UiWidget *self, void *user)
-{
-    (void)self; (void)user;
-    ui_scene_switch(&scene_about);
-}
-
-static void menu_enter(void)
-{
-    UiWidget *panel = ui_panel_add(CENTER_X(MENU_PANEL_W), MENU_PANEL_Y,
-                                   MENU_PANEL_W, MENU_PANEL_H, "MINISCRATCH");
+static void menu_enter(void) {
+    UiWidget *panel = ui_panel_add(50, 40, 140, 110, "MINISCRATCH");
     UiRect c = ui_panel_content_rect(panel);
-
-    int total = MENU_BTN_COUNT * UI_BUTTON_H + (MENU_BTN_COUNT - 1) * MENU_BTN_GAP;
-    int bx = c.x + (c.w - MENU_BTN_W) / 2;
-    int by = c.y + (c.h - total) / 2;
-    int step = UI_BUTTON_H + MENU_BTN_GAP;
-
-    ui_button_add(bx, by,            MENU_BTN_W, UI_BUTTON_H, "New Project", on_start, NULL);
-    ui_button_add(bx, by + step,     MENU_BTN_W, UI_BUTTON_H, "Continue",    on_start, NULL);
-    ui_button_add(bx, by + 2 * step, MENU_BTN_W, UI_BUTTON_H, "About",       on_about, NULL);
-    ui_button_add(bx, by + 3 * step, MENU_BTN_W, UI_BUTTON_H, "Settings",    on_about, NULL);
-
-    /* Start with cursor on the first button */
-    ui_cursor_set_pos(bx + MENU_BTN_W / 2, by + UI_BUTTON_H / 2);
+    int bx = c.x + (c.w - 100) / 2;
+    ui_button_add(bx, c.y + 10, 100, UI_BUTTON_H, "New Project", on_start, NULL);
+    ui_button_add(bx, c.y + 10 + UI_BUTTON_H + 6, 100, UI_BUTTON_H, "About", on_about, NULL);
+    ui_button_add(bx, c.y + 10 + (UI_BUTTON_H + 6) * 2, 100, UI_BUTTON_H, "Settings", on_about, NULL);
+    ui_cursor_set_pos(bx + 50, c.y + 10 + UI_BUTTON_H / 2);
 }
 
-static void menu_draw_bg(void)
-{
-    static const char title[]    = "MINISCRATCH";
-    static const char subtitle[] = "Visual Programming for GBA";
-
+static void menu_draw_bg(void) {
     ui_draw_dot_grid(UI_COL_BG_MID);
-
-    ui_draw_text_ex(CENTER_X(ui_text_width(title, TITLE_SCALE)), TITLE_Y,
-                    UI_SCREEN_W, title, UI_COL_ACCENT_ORANGE_LIGHT, TITLE_SCALE);
-
-    ui_fill_rect(CENTER_X(TITLE_RULE_W), TITLE_RULE_Y, TITLE_RULE_W, TITLE_RULE_H,
-                 UI_COL_ACCENT_BLUE);
-    ui_fill_rect(CENTER_X(TITLE_RULE_W), TITLE_RULE_Y, TITLE_RULE_W, 1,
-                 UI_COL_ACCENT_BLUE_LIGHT);
-
-    ui_draw_text(CENTER_X(ui_text_width(subtitle, 1)), SUBTITLE_Y, subtitle, UI_COL_TEXT_DIM);
+    ui_draw_text(70, 10, "MINISCRATCH", UI_COL_ACCENT_ORANGE_LIGHT);
 }
 
-static void menu_draw_fg(void)
-{
-    draw_hint_centered("D-Pad: Move   A: Select");
-}
+const UiScene scene_menu = { .on_enter = menu_enter, .on_draw_bg = menu_draw_bg };
 
-const UiScene scene_menu =
-{
-    .on_enter   = menu_enter,
-    .on_update  = NULL,
-    .on_draw_bg = menu_draw_bg,
-    .on_draw_fg = menu_draw_fg,
-    .on_exit    = NULL
-};
+// --- WORKSPACE ---
+static UiSprite *s_cat_sprite;
 
-/* ======================================================================== */
-/* Workspace                                                                */
-/* ======================================================================== */
-static const char *const k_blocks[] =
-{
-    "Move 10", "Turn 15", "Say Hello", "Wait 1s", 
-    "Repeat 10", "Forever", "If Var=0", "Set Var", 
-    "Change Var", "Next Costume", "Stop"
-};
-#define BLOCK_COUNT ((int)(sizeof(k_blocks) / sizeof(k_blocks[0])))
+static void ws_enter(void) {
+    block_engine_init();
+    ui_cursor_set_pos(80, 80); // Start cursor in sandbox
 
-static const char *const k_script[] =
-{
-    "Move 10", "Wait 1s", "Say Hello"
-};
-#define SCRIPT_COUNT ((int)(sizeof(k_script) / sizeof(k_script[0])))
+    // Add actual Back button widget
+    ui_button_add(RIGHT_X + 4, 140, 62, 14, "Back", on_back, NULL);
 
-static UiWidget *s_list_blocks;
-static UiWidget *s_list_script;
-
-static void on_block_click(UiWidget *self, void *user)
-{
-    (void)user;
-    int sel = ui_list_selected(self);
-    if (sel >= 0) {
-        /* In a real app, we would append to the script here */
+    // Setup Cat Sprite (Placeholder for now)
+    s_cat_sprite = ui_sprite_alloc();
+    if (s_cat_sprite) {
+        s_cat_sprite->attr0 = (30 & 0xFF) | 0x0000;
+        s_cat_sprite->attr1 = (180 & 0x1FF) | 0x4000; // 16x16 size
+        s_cat_sprite->attr2 = 0 | (0 << 12);
     }
 }
 
-static void ws_enter(void)
-{
-    /* Left Panel: Blocks */
-    UiWidget *left = ui_panel_add(WS_MARGIN, WS_MARGIN, WS_LEFT_W, WS_PANEL_H, "BLOCKS");
-    UiRect lc = ui_panel_content_rect(left);
-    s_list_blocks = ui_list_add(lc.x, lc.y, lc.w, lc.h, k_blocks, BLOCK_COUNT, on_block_click, NULL);
+static void ws_update(void) {
+    block_engine_update(); // Handle dragging and snapping
 
-    /* Center Panel: Script */
-    UiWidget *center = ui_panel_add(WS_CENTER_X, WS_MARGIN, WS_CENTER_W, WS_PANEL_H, "SCRIPT");
-    UiRect cc = ui_panel_content_rect(center);
-    s_list_script = ui_list_add(cc.x, cc.y, cc.w, cc.h, k_script, SCRIPT_COUNT, NULL, NULL);
+    // Update cat sprite pos (static for now)
+    if (s_cat_sprite) {
+        s_cat_sprite->attr0 = (30 & 0xFF) | 0x0000;
+        s_cat_sprite->attr1 = (180 & 0x1FF) | 0x4000;
+    }
+}
 
-    /* Right Panel: Stage */
-    UiWidget *right = ui_panel_add(WS_RIGHT_X, WS_MARGIN, WS_RIGHT_W, WS_PANEL_H, "STAGE");
-    UiRect rc = ui_panel_content_rect(right);
+static void ws_draw_bg(void) {
+    // Draw background panels
+    ui_fill_rect(0, 0, LEFT_TABS_W, UI_SCREEN_H, UI_COL_PANEL_DARK); // Tabs
+    ui_fill_rect(LEFT_TABS_W, 0, LEFT_PALETTE_W, UI_SCREEN_H, UI_COL_BG_DARK); // Palette
+    ui_fill_rect(SANDBOX_X, 0, SANDBOX_W, UI_SCREEN_H, UI_COL_PANEL); // Sandbox
+    ui_fill_rect(RIGHT_X, 0, RIGHT_W, UI_SCREEN_H, UI_COL_BG_DARK); // Right panel
+
+    // Sandbox grid
+    for(int i=SANDBOX_X; i<SANDBOX_X+SANDBOX_W; i+=8)
+        for(int j=0; j<UI_SCREEN_H; j+=8)
+            ui_fill_rect(i, j, 1, 1, UI_COL_BG_MID);
+
+    // Draw Tabs (Motion, Looks, Control, Events)
+    ui_fill_rect(2, 20, 8, 20, CAT_MOTION);
+    ui_fill_rect(2, 45, 8, 20, CAT_LOOKS);
+    ui_fill_rect(2, 70, 8, 20, CAT_CONTROL);
+    ui_fill_rect(2, 95, 8, 20, CAT_EVENTS);
+
+    // Draw Palette blocks
+    block_engine_draw_palette();
+
+    // Draw Sandbox blocks
+    block_engine_draw_sandbox();
+
+    // Draw Stage box
+    ui_draw_frame(RIGHT_X + 3, 3, STAGE_SIZE, STAGE_SIZE, UI_COL_TEXT_DIM);
+
+    // Draw Sprite List
+    ui_draw_text(RIGHT_X + 4, 72, "Sprites:", UI_COL_TEXT);
+    ui_fill_rect(RIGHT_X + 4, 82, 62, 14, UI_COL_ACCENT_BLUE);
+    ui_draw_text(RIGHT_X + 6, 85, "Cat", UI_COL_TEXT);
+
+    // Add Sprite button
+    ui_fill_rect(RIGHT_X + 4, 100, 62, 14, UI_COL_PANEL_LIGHT);
+    ui_draw_text(RIGHT_X + 20, 103, "+ Add", UI_COL_TEXT);
     
-    /* Add a Back button in the stage panel */
-    ui_button_add(rc.x + 4, rc.y + rc.h - UI_BUTTON_H - 4, rc.w - 8, UI_BUTTON_H, "Back", on_back, NULL);
-    
-    /* Set cursor to the blocks list */
-    ui_cursor_set_pos(lc.x + lc.w / 2, lc.y + 10);
+    // NOTE: The Back button is drawn automatically by NanoUI because we added it in ws_enter()!
 }
 
-static void ws_draw_bg(void) 
-{ 
-    ui_draw_dot_grid(UI_COL_BG_MID); 
+const UiScene scene_workspace = { .on_enter = ws_enter, .on_update = ws_update, .on_draw_bg = ws_draw_bg };
+
+// --- ABOUT ---
+static void about_enter(void) {
+    ui_button_add(70, 120, 100, UI_BUTTON_H, "Back", on_back, NULL);
+    ui_cursor_set_pos(120, 120 + UI_BUTTON_H / 2);
 }
-
-static void ws_draw_fg(void)
-{
-    UiRect rc = ui_panel_content_rect(ui_hit_test(WS_RIGHT_X, WS_MARGIN)); // Hack to get right panel rect
-    /* Draw variables in the stage panel */
-    ui_draw_text(WS_RIGHT_X + 6, WS_MARGIN + 20, "Var 0: 0", UI_COL_TEXT);
-    ui_draw_text(WS_RIGHT_X + 6, WS_MARGIN + 32, "Var 1: 0", UI_COL_TEXT);
-    ui_draw_text(WS_RIGHT_X + 6, WS_MARGIN + 44, "Var 2: 0", UI_COL_TEXT);
+static void about_draw_bg(void) {
+    ui_draw_dot_grid(UI_COL_BG_MID);
+    ui_draw_text(50, 40, "MiniScratch GBA", UI_COL_TEXT);
 }
+const UiScene scene_about = { .on_enter = about_enter, .on_draw_bg = about_draw_bg };
 
-const UiScene scene_workspace =
-{
-    .on_enter   = ws_enter,
-    .on_update  = NULL,
-    .on_draw_bg = ws_draw_bg,
-    .on_draw_fg = ws_draw_fg,
-    .on_exit    = NULL
-};
-
-/* ======================================================================== */
-/* About                                                                    */
-/* ======================================================================== */
-static UiRect s_about;
-
-static void about_enter(void)
-{
-    UiWidget *p = ui_panel_add(24, 16, 192, 112, "ABOUT");
-    s_about = ui_panel_content_rect(p);
-    ui_button_add(CENTER_X(100), 134, 100, UI_BUTTON_H, "Back", on_back, NULL);
-    ui_cursor_set_pos(CENTER_X(100) + 50, 134 + UI_BUTTON_H / 2);
-}
-
-static void about_draw_bg(void) { ui_draw_dot_grid(UI_COL_BG_MID); }
-
-static void about_draw_fg(void)
-{
-    ui_draw_text_box(s_about.x, s_about.y, s_about.w,
-        "MiniScratch for GBA.\n\nA tiny visual programming tool. Built with the NanoUI Engine.\n\nPress B to return.",
-        UI_COL_TEXT);
-}
-
-const UiScene scene_about =
-{
-    .on_enter   = about_enter,
-    .on_update  = NULL,
-    .on_draw_bg = about_draw_bg,
-    .on_draw_fg = about_draw_fg,
-    .on_exit    = NULL
-};
-
-/* ======================================================================== */
-int main(void)
-{
+// --- MAIN ---
+int main(void) {
     ui_init();
     ui_scene_switch(&scene_menu);
-
-    for (;;)
-    {
-        ui_update();     /* input, cursor, widgets, scene logic, canvas drawing */
-        ui_present();    /* VBlank: upload dirty tile rows + OAM                */
+    for (;;) {
+        ui_update();
+        ui_present();
     }
     return 0;
 }

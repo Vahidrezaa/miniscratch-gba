@@ -37,7 +37,7 @@
 #define UI_MAP_W             (UI_SCREEN_W / UI_TILE_PX)     /* 30 */
 #define UI_MAP_H             (UI_SCREEN_H / UI_TILE_PX)     /* 20 */
 #define UI_CANVAS_TILES      (UI_MAP_W * UI_MAP_H)          /* 600 */
-#define UI_TILE_WORDS        8      /* u32 per 4bpp tile: one word per pixel row */
+#define UI_TILE_WORDS        16      /* u32 per 4bpp tile: one word per pixel row */
 
 /* VRAM layout for BG0 (the screenblock sits in the last 2KB of BG VRAM) */
 #define UI_BG_CBB            0      /* tile data base (charblock index) */
@@ -52,7 +52,7 @@
 #define UI_OAM_COUNT         128
 #define UI_SPRITE_CURSOR     0      /* lowest slot = drawn in front of the rest */
 #define UI_SPRITE_POOL_FIRST 1
-#define UI_OBJ_TILES_TOTAL   1024   /* 32KB of OBJ VRAM in Mode 0 (4bpp)        */
+#define UI_OBJ_TILES_TOTAL   512    /* 32KB of OBJ VRAM in Mode 0 (8bpp)        */
 #define UI_OBJ_TILE_CURSOR   0
 #define UI_CURSOR_SIZE       16     /* cursor sprite is 16x16 px                */
 #define UI_CURSOR_TILES      4
@@ -63,13 +63,15 @@
 #define UI_ATTR0_Y_MASK      0x00FF
 #define UI_ATTR0_HIDE        0x0200
 #define UI_ATTR0_SHAPE_SQ    0x0000
+#define UI_ATTR0_8BPP        0x2000
 #define UI_ATTR1_X_MASK      0x01FF
 #define UI_ATTR1_SIZE_16     0x4000
 #define UI_ATTR2_PRIO_SHIFT  10
 #define UI_ATTR2_PAL_SHIFT   12
 
 /* ------------------------------------------------------------------------ */
-/* Palette: one 16-colour bank shared by everything drawn on the canvas     */
+/* Palette: 256 colors (8bpp) - General UI colors are set here.             */
+/* Indices 17-29 are reserved for the application (e.g., Scratch colors).   */
 /* ------------------------------------------------------------------------ */
 typedef u8 UiColor;
 enum
@@ -90,8 +92,18 @@ enum
     UI_COL_ACCENT_ORANGE,
     UI_COL_ACCENT_ORANGE_LIGHT,
     UI_COL_ACCENT_ORANGE_DARK,
-    UI_PAL_SIZE                  /* = 16 */
+    UI_COL_WHITE,                /* index 16: pure white                  */
+    
+    /* Indices 17-29 are RESERVED for application colors (e.g., Scratch). */
+    /* They are left uninitialized by the engine and must be filled by    */
+    /* the application via ui_palette_set_rgb().                          */
+    
+    UI_CUR_OUTLINE = 30,         /* index 30: cursor outline color        */
+    UI_CUR_FILL,                 /* index 31: cursor fill color           */
+    
+    UI_PAL_SIZE = 256            /* Total palette size for 8bpp           */
 };
+void ui_palette_set_rgb(int index, int r, int g, int b);
 
 /* ------------------------------------------------------------------------ */
 /* Widget / typography metrics                                              */

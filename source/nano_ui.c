@@ -217,6 +217,16 @@ void ui_clear(UiColor c)
     s_dirty_rows = NUI_ALL_ROWS_MASK;
 }
 
+void ui_palette_set_rgb(int index, int r, int g, int b)
+{
+    if (index < 0 || index >= UI_PAL_SIZE) return;
+    u16 color = NUI_RGB(r, g, b);
+    volatile u16 *pal_bg  = (volatile u16 *)NUI_PAL_BG_BASE;
+    volatile u16 *pal_obj = (volatile u16 *)NUI_PAL_OBJ_BASE;
+    pal_bg[index]  = color;
+    pal_obj[index] = color;
+}
+
 void ui_fill_rect(int x, int y, int w, int h, UiColor c)
 {
     if (w <= 0 || h <= 0) return;
@@ -903,7 +913,7 @@ static void cursor_upload_tiles(void)
             char ch = k_cursor_art[y][x];
             if (ch == '\0') break;
 
-            u32 idx = (ch == 'k') ? CUR_OUTLINE : (ch == 'w') ? CUR_FILL : CUR_TRANSPARENT;
+            u32 idx = (ch == 'k') ? UI_CUR_OUTLINE : (ch == 'w') ? UI_CUR_FILL : UI_COL_BLACK;
             int tile = (y >> 3) * (UI_CURSOR_SIZE / UI_TILE_PX) + (x >> 3);
             tiles[tile][y & 7] |= idx << ((x & 7) * NUI_BITS_PER_PIXEL);
         }
