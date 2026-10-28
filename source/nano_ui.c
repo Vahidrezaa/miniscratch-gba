@@ -194,37 +194,9 @@ static void canvas_hspan(int x0, int x1, int y, UiColor c)
     if (x1 > UI_SCREEN_W) x1 = UI_SCREEN_W;
     if (x0 >= x1) return;
 
-    u32 pat = (u32)c * 0x01010101u; // Fill 4 pixels at once with the same color
-    int tx0 = x0 >> 3;
-    int tx1 = (x1 - 1) >> 3;
-    u32 *row = &s_canvas[(y >> 3) * UI_MAP_W + tx0][(y & 7) * 2];
-
-    for (int tx = tx0; tx <= tx1; tx++, row += UI_TILE_WORDS)
-    {
-        int a = (tx == tx0) ? (x0 & 7) : 0;
-        int b = (tx == tx1) ? ((x1 - 1) & 7) : 7;
-        
-        // A tile is 8 pixels wide, split into two 4-pixel words.
-        // Word 0 holds pixels 0-3, Word 1 holds pixels 4-7.
-        
-        if (a <= 3 && b >= 4) {
-            // The span covers both words inside this tile
-            u32 mask0 = (a == 0) ? 0xFFFFFFFF : (0xFFFFFFFF << (a * 8));
-            u32 mask1 = (b == 7) ? 0xFFFFFFFF : (0xFFFFFFFF >> ((7 - b) * 8));
-            
-            row[0] = (row[0] & ~mask0) | (pat & mask0);
-            row[1] = (row[1] & ~mask1) | (pat & mask1);
-        } else if (b <= 3) {
-            // The span is only in the first word (left half of tile)
-            u32 mask0 = (0xFFFFFFFFu << (a * 8)) & (0xFFFFFFFFu >> ((3 - b) * 8));
-            row[0] = (row[0] & ~mask0) | (pat & mask0);
-        } else {
-            // The span is only in the second word (right half of tile)
-            int a2 = a - 4;
-            int b2 = b - 4;
-            u32 mask1 = (0xFFFFFFFFu << (a2 * 8)) & (0xFFFFFFFFu >> ((3 - b2) * 8));
-            row[1] = (row[1] & ~mask1) | (pat & mask1);
-        }
+    // Simple pixel-by-pixel loop (100% correct for 8bpp)
+    for (int x = x0; x < x1; x++) {
+        canvas_plot(x, y, c);
     }
 }
 
@@ -915,8 +887,7 @@ static void cursor_sprite_update(void)
 
     s->attr0 = (u16)((sy & UI_ATTR0_Y_MASK) | UI_ATTR0_SHAPE_SQ | UI_ATTR0_8BPP);
     s->attr1 = (u16)((sx & UI_ATTR1_X_MASK) | UI_ATTR1_SIZE_16);
-    s->attr2 = (u16)(UI_OBJ_TILE_CURSOR | (UI_OBJ_PRIO << UI_ATTR2_PRIO_SHIFT) |
-                     (pal << UI_ATTR2_PAL_SHIFT));
+    s->attr2 = (u16)(UI_OBJ_TILE_CURSOR | (UI_OBJ_PRIO << UI_ATTR2_PRIO_SHIFT));
 }
 
 /* Rasterise the ASCII art into 4 tiles (1D mapping: TL, TR, BL, BR). */
@@ -1003,13 +974,14 @@ void ui_init(void)
     volatile u16 *pal_obj = (volatile u16 *)NUI_PAL_OBJ_BASE;
     for (int i = 0; i < UI_PAL_SIZE; i++)
         pal_bg[i] = k_ui_palette[i];
-    for (int bank = 0; bank < 2; bank++)
-    {
-        for (int i = 0; i < NUI_PAL_BANK_ENTRIES; i++)
-            pal_obj[bank * NUI_PAL_BANK_ENTRIES + i] = 0;
-        for (int i = 0; i < CUR_PAL_USED; i++)
-            pal_obj[bank * NUI_PAL_BANK_ENTRIES + i] = k_cursor_pal[bank][i];
-    }
+
+    // Copy the exact same palette to OBJ (so the cursor works)
+    for (int i = 0; i < UI_PAL_SIZE; i++)
+        pal_obj[i] = k_ui_palette[i];
+
+    // Set the specific colors for the cursor
+    pal_obj[UI_CUR_OUTLINE] = NUI_RGB(1, 1, 3);
+    pal_obj[UI_CUR_FILL]    = NUI_RGB(31, 31, 31);
 
     /* map: visible cell (tx,ty) shows canvas tile ty*30+tx, the rest is blank */
     volatile u16 *map = NUI_BG_MAP;
