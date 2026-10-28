@@ -1,6 +1,7 @@
 #include "block_engine.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 static Block blocks[MAX_BLOCKS];
 static int active_drag_idx = -1;
