@@ -133,7 +133,7 @@ void vm_draw_cat(void) {
         if (by < 2) by = 2;
         gfx_fill_rect(bx, by, w, 12, 1);
         gfx_rect(bx, by, w, 12, 2);
-        font_draw(bx+3, by+2, g_cat.say, 2);
+        font_draw_text(bx+3, by+2, g_cat.say, 2);
         if (g_cat.say_timer) g_cat.say_timer--;
         else g_cat.say = 0;
     }
