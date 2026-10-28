@@ -2,16 +2,18 @@ TARGET   := miniscratch
 BUILD    := build
 SOURCES  := source
 INCLUDES := source
-LIBPATHS :=
 LIBS     := -ltonc
 
-# Explicitly define the toolchain path using the DEVKITARM variable
+# Absolute paths based on diagnostic output
+DEVKITARM := /opt/devkitpro/devkitARM
+LIBTONC   := /opt/devkitpro/libtonc
+
 CC       := $(DEVKITARM)/bin/arm-none-eabi-gcc
 OBJCOPY  := $(DEVKITARM)/bin/arm-none-eabi-objcopy
 
 ARCH     := -mthumb-interwork -mthumb
-CFLAGS   := $(ARCH) -I$(INCLUDES) -Wall -O2 -std=gnu99
-LDFLAGS  := $(ARCH) -specs=gba.specs
+CFLAGS   := $(ARCH) -I$(INCLUDES) -I$(LIBTONC)/include -Wall -O2 -std=gnu99
+LDFLAGS  := $(ARCH) -specs=gba.specs -L$(LIBTONC)/lib -L$(DEVKITARM)/lib
 
 CFILES   := $(wildcard $(SOURCES)/*.c)
 OFILES   := $(patsubst $(SOURCES)/%.c, $(BUILD)/%.o, $(CFILES))
@@ -25,7 +27,7 @@ $(TARGET).gba: $(TARGET).elf
 	gbafix $@
 
 $(TARGET).elf: $(OFILES)
-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBPATHS) $(LIBS)
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 $(BUILD)/%.o: $(SOURCES)/%.c | $(BUILD)
 	$(CC) $(CFLAGS) -c $< -o $@
