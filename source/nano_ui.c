@@ -180,12 +180,10 @@ static void mark_rows(int y0, int y1)
  * one nibble per pixel (leftmost pixel in the lowest nibble). */
 static inline void canvas_plot(int x, int y, UiColor c)
 {
-    if ((unsigned)x >= UI_SCREEN_W || (unsigned)y >= UI_SCREEN_H)
-        return;
-
-    u32 *word  = &s_canvas[(y >> 3) * UI_MAP_W + (x >> 3)][y & 7];
-    u32  shift = (u32)(x & 7) * NUI_BITS_PER_PIXEL;
-    *word = (*word & ~(0xFu << shift)) | ((u32)c << shift);
+    if ((unsigned)x >= UI_SCREEN_W || (unsigned)y >= UI_SCREEN_H) return;
+    u32 *word  = &s_canvas[(y >> 3) * UI_MAP_W + (x >> 3)][(y & 7) * 2 + ((x & 7) >> 2)];
+    u32  shift = (u32)(x & 3) * 8;
+    *word = (*word & ~(0xFFu << shift)) | ((u32)c << shift);
 }
 
 /* Horizontal span [x0, x1) on pixel row y, one masked write per tile. */
@@ -196,18 +194,37 @@ static void canvas_hspan(int x0, int x1, int y, UiColor c)
     if (x1 > UI_SCREEN_W) x1 = UI_SCREEN_W;
     if (x0 >= x1) return;
 
-    u32 pat = (u32)c * NUI_NIBBLE_FILL;
+    u32 pat = (u32)c * 0x01010101u; // Fill 4 pixels at once with the same color
     int tx0 = x0 >> 3;
     int tx1 = (x1 - 1) >> 3;
-    u32 *row = &s_canvas[(y >> 3) * UI_MAP_W + tx0][y & 7];
+    u32 *row = &s_canvas[(y >> 3) * UI_MAP_W + tx0][(y & 7) * 2];
 
     for (int tx = tx0; tx <= tx1; tx++, row += UI_TILE_WORDS)
     {
         int a = (tx == tx0) ? (x0 & 7) : 0;
         int b = (tx == tx1) ? ((x1 - 1) & 7) : 7;
-        u32 mask = (0xFFFFFFFFu << (a * NUI_BITS_PER_PIXEL)) &
-                   (0xFFFFFFFFu >> ((7 - b) * NUI_BITS_PER_PIXEL));
-        *row = (*row & ~mask) | (pat & mask);
+        
+        // A tile is 8 pixels wide, split into two 4-pixel words.
+        // Word 0 holds pixels 0-3, Word 1 holds pixels 4-7.
+        
+        if (a <= 3 && b >= 4) {
+            // The span covers both words inside this tile
+            u32 mask0 = (a == 0) ? 0xFFFFFFFF : (0xFFFFFFFF << (a * 8));
+            u32 mask1 = (b == 7) ? 0xFFFFFFFF : (0xFFFFFFFF >> ((7 - b) * 8));
+            
+            row[0] = (row[0] & ~mask0) | (pat & mask0);
+            row[1] = (row[1] & ~mask1) | (pat & mask1);
+        } else if (b <= 3) {
+            // The span is only in the first word (left half of tile)
+            u32 mask0 = (0xFFFFFFFFu << (a * 8)) & (0xFFFFFFFFu >> ((3 - b) * 8));
+            row[0] = (row[0] & ~mask0) | (pat & mask0);
+        } else {
+            // The span is only in the second word (right half of tile)
+            int a2 = a - 4;
+            int b2 = b - 4;
+            u32 mask1 = (0xFFFFFFFFu << (a2 * 8)) & (0xFFFFFFFFu >> ((3 - b2) * 8));
+            row[1] = (row[1] & ~mask1) | (pat & mask1);
+        }
     }
 }
 
@@ -269,8 +286,9 @@ void ui_draw_dot_grid(UiColor c)
     for (int ty = 0; ty < UI_MAP_H; ty += UI_GRID_STEP_TILES)
         for (int tx = 0; tx < UI_MAP_W; tx += UI_GRID_STEP_TILES)
         {
+            // Directly write to the first pixel of the tile (Word 0, Byte 0)
             u32 *word = &s_canvas[ty * UI_MAP_W + tx][0];
-            *word = (*word & ~0xFu) | (u32)c;
+            *word = (*word & ~0xFFu) | (u32)c;
         }
     s_dirty_rows = NUI_ALL_ROWS_MASK;
 }
@@ -906,20 +924,18 @@ static void cursor_upload_tiles(void)
 {
     u32 tiles[UI_CURSOR_TILES][UI_TILE_WORDS];
     memset(tiles, 0, sizeof(tiles));
-
+    
     for (int y = 0; y < UI_CURSOR_SIZE; y++)
         for (int x = 0; x < UI_CURSOR_SIZE; x++)
         {
             char ch = k_cursor_art[y][x];
             if (ch == '\0') break;
-
             u32 idx = (ch == 'k') ? UI_CUR_OUTLINE : (ch == 'w') ? UI_CUR_FILL : UI_COL_BLACK;
             int tile = (y >> 3) * (UI_CURSOR_SIZE / UI_TILE_PX) + (x >> 3);
-            tiles[tile][y & 7] |= idx << ((x & 7) * NUI_BITS_PER_PIXEL);
+            tiles[tile][(y & 7) * 2 + ((x & 7) >> 2)] |= idx << ((x & 3) * 8);
         }
-
-    memcpy32(&NUI_OBJ_TILES[UI_OBJ_TILE_CURSOR * UI_TILE_WORDS], tiles,
-             UI_CURSOR_TILES * UI_TILE_WORDS);
+        
+    memcpy32(&NUI_OBJ_TILES[UI_OBJ_TILE_CURSOR * UI_TILE_WORDS], tiles, UI_CURSOR_TILES * UI_TILE_WORDS);
 }
 
 /* ------------------------------------------------------------------------ */
