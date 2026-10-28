@@ -1,39 +1,52 @@
+#---------------------------------------------------------------------------------
+# MiniScratch (NanoUI) - GBA Makefile
+#---------------------------------------------------------------------------------
+ifeq ($(strip $(DEVKITARM)),)
+$(error "Please set DEVKITARM in your environment: export DEVKITARM=<path to>devkitARM")
+endif
+ifeq ($(strip $(DEVKITPRO)),)
+$(error "Please set DEVKITPRO in your environment: export DEVKITPRO=<path to>devkitPro")
+endif
+
 TARGET   := miniscratch
+TITLE    := MINISCRATCH
+SRCS     := main.c nano_ui.c font_data.c
 BUILD    := build
-SOURCES  := source
-INCLUDES := source
+OBJS     := $(SRCS:%.c=$(BUILD)/%.o)
+
+PREFIX   := $(DEVKITARM)/bin/arm-none-eabi-
+CC       := $(PREFIX)gcc
+OBJCOPY  := $(PREFIX)objcopy
+GBAFIX   := $(DEVKITPRO)/tools/bin/gbafix
+
+TONC     := $(DEVKITPRO)/libtonc
+ARCH     := -mthumb -mthumb-interwork
+CFLAGS   := -std=gnu11 -O2 -Wall -Wextra -mcpu=arm7tdmi -mtune=arm7tdmi \
+            -fomit-frame-pointer -ffunction-sections -fdata-sections \
+            -MMD -MP -I. -I$(TONC)/include $(ARCH)
+LDFLAGS  := -specs=gba.specs $(ARCH) -Wl,--gc-sections \
+            -Wl,-Map,$(BUILD)/$(TARGET).map -L$(TONC)/lib
 LIBS     := -ltonc
-
-# Absolute paths based on diagnostic output
-DEVKITARM := /opt/devkitpro/devkitARM
-LIBTONC   := /opt/devkitpro/libtonc
-
-CC       := $(DEVKITARM)/bin/arm-none-eabi-gcc
-OBJCOPY  := $(DEVKITARM)/bin/arm-none-eabi-objcopy
-
-ARCH     := -mthumb-interwork -mthumb
-CFLAGS   := $(ARCH) -I$(INCLUDES) -I$(LIBTONC)/include -Wall -O2 -std=gnu99
-LDFLAGS  := $(ARCH) -specs=gba.specs -L$(LIBTONC)/lib -L$(DEVKITARM)/lib
-
-CFILES   := $(wildcard $(SOURCES)/*.c)
-OFILES   := $(patsubst $(SOURCES)/%.c, $(BUILD)/%.o, $(CFILES))
 
 .PHONY: all clean
 
 all: $(TARGET).gba
 
-$(TARGET).gba: $(TARGET).elf
+$(TARGET).gba: $(BUILD)/$(TARGET).elf
 	$(OBJCOPY) -O binary $< $@
-	gbafix $@
+	$(GBAFIX) $@ -t$(TITLE)
+	@echo "built $@"
 
-$(TARGET).elf: $(OFILES)
-	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
+$(BUILD)/$(TARGET).elf: $(OBJS)
+	$(CC) $(OBJS) $(LDFLAGS) $(LIBS) -o $@
 
-$(BUILD)/%.o: $(SOURCES)/%.c | $(BUILD)
+$(BUILD)/%.o: %.c | $(BUILD)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BUILD):
 	mkdir -p $(BUILD)
 
 clean:
-	rm -rf $(BUILD) $(TARGET).elf $(TARGET).gba
+	rm -rf $(BUILD) $(TARGET).gba
+
+-include $(OBJS:.o=.d)
