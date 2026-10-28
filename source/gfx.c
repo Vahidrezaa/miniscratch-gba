@@ -14,15 +14,15 @@ static const u16 pal16[] = {
 };
 
 void load_assets(void) {
-    // 1. بارگذاری پالت‌ها در حافظه OBJ Palette
-    memcpy16(&pal_obj_mem[0], catPal, 16);             // بانک 0 برای گربه
-    memcpy16(&pal_obj_mem[16], green_flagPal, 16);     // بانک 1 برای پرچم
+    // 1. Load palettes into OBJ Palette memory
+    memcpy16(&pal_obj_mem[0], catPal, 16);             // Bank 0 for cat
+    memcpy16(&pal_obj_mem[16], green_flagPal, 16);     // Bank 1 for green flag
 
-    // 2. باز کردن (Decompress) تایل‌ها در VRAM
-    lz77_uncomp_vram(catTiles, &tile_mem[4][0]);       // تایل‌های گربه از ایندکس 0
-    lz77_uncomp_vram(green_flagTiles, &tile_mem[4][16]);// تایل‌های پرچم از ایندکس 16
+    // 2. Decompress tiles into VRAM
+    LZ77UnCompVram(catTiles, &tile_mem[4][0]);         // Cat tiles start at index 0
+    LZ77UnCompVram(green_flagTiles, &tile_mem[4][16]); // Flag tiles start at index 16
 
-    // 3. مقداردهی اولیه OAM
+    // 3. Initialize OAM
     oam_init(obj_buffer, 128);
 }
 
