@@ -53,7 +53,7 @@ static void ws_enter(void) {
     // Setup Cat Sprite (Placeholder for now)
     s_cat_sprite = ui_sprite_alloc();
     if (s_cat_sprite) {
-        s_cat_sprite->attr0 = (30 & 0xFF) | 0x0000;
+        s_cat_sprite->attr0 = (30 & 0xFF) | 0x0000 | UI_ATTR0_8BPP;
         s_cat_sprite->attr1 = (180 & 0x1FF) | 0x4000; // 16x16 size
         s_cat_sprite->attr2 = 0 | (0 << 12);
     }
@@ -64,7 +64,7 @@ static void ws_update(void) {
 
     // Update cat sprite pos (static for now)
     if (s_cat_sprite) {
-        s_cat_sprite->attr0 = (30 & 0xFF) | 0x0000;
+        s_cat_sprite->attr0 = (30 & 0xFF) | 0x0000 | UI_ATTR0_8BPP;
         s_cat_sprite->attr1 = (180 & 0x1FF) | 0x4000;
     }
 }

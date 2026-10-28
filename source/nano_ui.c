@@ -36,7 +36,7 @@
 #define NUI_OBJ_TILES         ((u32 *)NUI_OBJ_VRAM_BASE)
 
 #define NUI_RGB(r, g, b)      ((u16)((r) | ((g) << 5) | ((b) << 10)))
-#define NUI_NIBBLE_FILL       0x11111111u   /* replicate a 4bpp colour across a word */
+#define NUI_BYTE_FILL         0x01010101u   /* replicate a 4bpp colour across a word */
 #define NUI_PIXELS_PER_WORD   8
 #define NUI_BITS_PER_PIXEL    4
 #define NUI_ALL_ROWS_MASK     ((1u << UI_MAP_H) - 1u)
@@ -230,7 +230,7 @@ static void canvas_hspan(int x0, int x1, int y, UiColor c)
 
 void ui_clear(UiColor c)
 {
-    memset32(s_canvas, (u32)c * NUI_NIBBLE_FILL, UI_CANVAS_TILES * UI_TILE_WORDS);
+    memset32(s_canvas, (u32)c * NUI_BYTE_FILL, UI_CANVAS_TILES * UI_TILE_WORDS);
     s_dirty_rows = NUI_ALL_ROWS_MASK;
 }
 
@@ -913,7 +913,7 @@ static void cursor_sprite_update(void)
     int sy = s_cur.y - UI_CURSOR_HOT_Y;
     u16 pal = s_hover ? UI_CURSOR_PAL_HOVER : UI_CURSOR_PAL_NORMAL;
 
-    s->attr0 = (u16)((sy & UI_ATTR0_Y_MASK) | UI_ATTR0_SHAPE_SQ);
+    s->attr0 = (u16)((sy & UI_ATTR0_Y_MASK) | UI_ATTR0_SHAPE_SQ | UI_ATTR0_8BPP);
     s->attr1 = (u16)((sx & UI_ATTR1_X_MASK) | UI_ATTR1_SIZE_16);
     s->attr2 = (u16)(UI_OBJ_TILE_CURSOR | (UI_OBJ_PRIO << UI_ATTR2_PRIO_SHIFT) |
                      (pal << UI_ATTR2_PAL_SHIFT));
@@ -993,7 +993,7 @@ void ui_init(void)
 {
     REG_DISPCNT = DCNT_BLANK;                       /* hide garbage while setting up */
 
-    REG_BG0CNT  = BG_CBB(UI_BG_CBB) | BG_SBB(UI_BG_SBB) | BG_4BPP |
+    REG_BG0CNT  = BG_CBB(UI_BG_CBB) | BG_SBB(UI_BG_SBB) | BG_8BPP |
                   BG_REG_32x32 | BG_PRIO(UI_BG_PRIO);
     REG_BG0HOFS = 0;
     REG_BG0VOFS = 0;

@@ -33,7 +33,7 @@
 /* ------------------------------------------------------------------------ */
 #define UI_SCREEN_W          240
 #define UI_SCREEN_H          160
-#define UI_TILE_PX           16
+#define UI_TILE_PX           8
 #define UI_MAP_W             (UI_SCREEN_W / UI_TILE_PX)     /* 30 */
 #define UI_MAP_H             (UI_SCREEN_H / UI_TILE_PX)     /* 20 */
 #define UI_CANVAS_TILES      (UI_MAP_W * UI_MAP_H)          /* 600 */
