@@ -1,52 +1,46 @@
 #---------------------------------------------------------------------------------
 # MiniScratch (NanoUI) - GBA Makefile
 #---------------------------------------------------------------------------------
-ifeq ($(strip $(DEVKITARM)),)
-$(error "Please set DEVKITARM in your environment: export DEVKITARM=<path to>devkitARM")
-endif
-ifeq ($(strip $(DEVKITPRO)),)
-$(error "Please set DEVKITPRO in your environment: export DEVKITPRO=<path to>devkitPro")
-endif
-
 TARGET   := miniscratch
-TITLE    := MINISCRATCH
-SRCS     := main.c nano_ui.c font_data.c
 BUILD    := build
-OBJS     := $(SRCS:%.c=$(BUILD)/%.o)
-
-PREFIX   := $(DEVKITARM)/bin/arm-none-eabi-
-CC       := $(PREFIX)gcc
-OBJCOPY  := $(PREFIX)objcopy
-GBAFIX   := $(DEVKITPRO)/tools/bin/gbafix
-
-TONC     := $(DEVKITPRO)/libtonc
-ARCH     := -mthumb -mthumb-interwork
-CFLAGS   := -std=gnu11 -O2 -Wall -Wextra -mcpu=arm7tdmi -mtune=arm7tdmi \
-            -fomit-frame-pointer -ffunction-sections -fdata-sections \
-            -MMD -MP -I. -I$(TONC)/include $(ARCH)
-LDFLAGS  := -specs=gba.specs $(ARCH) -Wl,--gc-sections \
-            -Wl,-Map,$(BUILD)/$(TARGET).map -L$(TONC)/lib
+SOURCES  := source
+INCLUDES := source
 LIBS     := -ltonc
+
+# Absolute paths proven to work in GitHub Actions
+DEVKITARM := /opt/devkitpro/devkitARM
+LIBTONC   := /opt/devkitpro/libtonc
+
+CC       := $(DEVKITARM)/bin/arm-none-eabi-gcc
+OBJCOPY  := $(DEVKITARM)/bin/arm-none-eabi-objcopy
+GBAFIX   := /opt/devkitpro/tools/bin/gbafix
+
+ARCH     := -mthumb-interwork -mthumb
+CFLAGS   := $(ARCH) -I$(INCLUDES) -I$(LIBTONC)/include -Wall -O2 -std=gnu11
+LDFLAGS  := $(ARCH) -specs=gba.specs -L$(LIBTONC)/lib -L$(DEVKITARM)/lib
+
+# Find all .c files in the source directory
+CFILES   := $(wildcard $(SOURCES)/*.c)
+# Map them to the build directory
+OFILES   := $(patsubst $(SOURCES)/%.c, $(BUILD)/%.o, $(CFILES))
 
 .PHONY: all clean
 
 all: $(TARGET).gba
 
-$(TARGET).gba: $(BUILD)/$(TARGET).elf
+$(TARGET).gba: $(TARGET).elf
 	$(OBJCOPY) -O binary $< $@
-	$(GBAFIX) $@ -t$(TITLE)
-	@echo "built $@"
+	$(GBAFIX) $@ -tMINISCRATCH
+	@echo "Built $@ successfully!"
 
-$(BUILD)/$(TARGET).elf: $(OBJS)
-	$(CC) $(OBJS) $(LDFLAGS) $(LIBS) -o $@
+$(TARGET).elf: $(OFILES)
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-$(BUILD)/%.o: %.c | $(BUILD)
+$(BUILD)/%.o: $(SOURCES)/%.c | $(BUILD)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BUILD):
 	mkdir -p $(BUILD)
 
 clean:
-	rm -rf $(BUILD) $(TARGET).gba
-
--include $(OBJS:.o=.d)
+	rm -rf $(BUILD) $(TARGET).elf $(TARGET).gba
