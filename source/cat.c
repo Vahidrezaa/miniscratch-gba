@@ -83,7 +83,6 @@ const unsigned int catTiles[82] = {
     0x133278BB,
     0x11AA0013,
     0xD077A07E,
-    0x00000000,
 };
 
 const unsigned short catPal[16] = {

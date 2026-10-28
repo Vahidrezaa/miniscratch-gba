@@ -5,7 +5,7 @@
 typedef struct {
     const char* name;
     u8 opcode;
-    u8 arg_min, arg_max;
+    s16 arg_min, arg_max;
     u8 category;
 } BlockDef;
 
