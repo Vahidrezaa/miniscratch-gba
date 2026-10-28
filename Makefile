@@ -5,6 +5,10 @@ INCLUDES := source
 LIBPATHS :=
 LIBS     := -ltonc
 
+# تعریف صریح کامپایلر و ابزارهای مخصوص GBA
+CC       := arm-none-eabi-gcc
+OBJCOPY  := arm-none-eabi-objcopy
+
 ARCH     := -mthumb-interwork -mthumb
 CFLAGS   := $(ARCH) -I$(INCLUDES) -Wall -O2 -std=gnu99
 LDFLAGS  := $(ARCH) -specs=gba.specs
